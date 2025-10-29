@@ -1,0 +1,57 @@
+//
+//  TodoItemTableViewCell.swift
+//  TodoList
+//
+//  Created by Oisha Sh. Madalieva on 27/10/25.
+//
+
+import UIKit
+
+class TodoItemTableViewCell: UITableViewCell {
+
+    let circleImageView = UIImageView(image: UIImage(systemName: "circle"))
+    let title = UILabel()
+    let chevronImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        contentView.addSubview(circleImageView)
+        contentView.addSubview(title)
+        contentView.addSubview(chevronImageView)
+
+        setupUI()
+
+        setNeedsUpdateConstraints()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setupUI() {
+        circleImageView.tintColor = .lightGray
+        circleImageView.contentMode = .scaleAspectFit
+
+        title.text = "Купить сыр"
+
+        chevronImageView.tintColor = .lightGray
+        chevronImageView.contentMode = .scaleAspectFit
+    }
+
+    override func updateConstraints() {
+        circleImageView.snp.updateConstraints { make in
+            make.leading.verticalEdges.equalToSuperview().inset(16)
+            make.size.equalTo(22)
+        }
+
+        title.snp.updateConstraints { make in
+            make.leading.equalTo(circleImageView.snp.trailing).offset(8)
+            make.verticalEdges.equalToSuperview().inset(16)
+        }
+
+        chevronImageView.snp.updateConstraints { make in
+            make.verticalEdges.trailing.equalToSuperview().inset(16)
+        }
+        super.updateConstraints()
+    }
+}
