@@ -18,7 +18,6 @@ class TodoItemTableViewCell: UITableViewCell {
         contentView.addSubview(circleImageView)
         contentView.addSubview(titleLabel)
         contentView.addSubview(chevronImageView)
-        
 
         setupUI()
 
