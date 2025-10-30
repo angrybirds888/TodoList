@@ -10,13 +10,13 @@ import UIKit
 class TodoItemTableViewCell: UITableViewCell {
 
     let circleImageView = UIImageView(image: UIImage(systemName: "circle"))
-    let title = UILabel()
+    let titleLabel = UILabel()
     let chevronImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         contentView.addSubview(circleImageView)
-        contentView.addSubview(title)
+        contentView.addSubview(titleLabel)
         contentView.addSubview(chevronImageView)
 
         setupUI()
@@ -32,10 +32,23 @@ class TodoItemTableViewCell: UITableViewCell {
         circleImageView.tintColor = .lightGray
         circleImageView.contentMode = .scaleAspectFit
 
-        title.text = "Купить сыр"
-
         chevronImageView.tintColor = .lightGray
         chevronImageView.contentMode = .scaleAspectFit
+    }
+
+    func configure(_ title: String, isCompleted: Bool) {
+        titleLabel.text = title
+        if isCompleted {
+            circleImageView.image = UIImage(systemName: "checkmark.circle.fill")
+            circleImageView.tintColor = .green
+
+            titleLabel.textColor = .lightGray
+        } else {
+            circleImageView.image = UIImage(systemName: "circle")
+            circleImageView.tintColor = .lightGray
+
+            titleLabel.textColor = .black
+        }
     }
 
     override func updateConstraints() {
@@ -44,7 +57,7 @@ class TodoItemTableViewCell: UITableViewCell {
             make.size.equalTo(22)
         }
 
-        title.snp.updateConstraints { make in
+        titleLabel.snp.updateConstraints { make in
             make.leading.equalTo(circleImageView.snp.trailing).offset(8)
             make.verticalEdges.equalToSuperview().inset(16)
         }
