@@ -16,7 +16,7 @@ class TodoListHeaderView: UITableViewHeaderFooterView {
         super.init(reuseIdentifier: reuseIdentifier)
         contentView.addSubview(taskName)
         contentView.addSubview(showButton)
-    
+
         setupUI()
 
         setNeedsUpdateConstraints()
@@ -27,11 +27,14 @@ class TodoListHeaderView: UITableViewHeaderFooterView {
     }
 
     func setupUI() {
-        taskName.text = "Tasks - 4"
         taskName.textColor = .lightGray
 
         showButton.setTitle("Show", for: .normal)
-        showButton.setTitleColor(.blue, for: .normal)
+        showButton.setTitleColor(.systemBlue, for: .normal)
+    }
+
+    func updateTaskCount(_ count: Int) {
+        taskName.text = "Tasks - \(count)"
     }
 
     override func updateConstraints() {
