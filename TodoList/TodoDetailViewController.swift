@@ -7,38 +7,67 @@
 
 import UIKit
 
-class TodoDetailViewController: UIViewController {
+final class TodoDetailViewController: UIViewController {
 
-    let textView = UITextView()
+    // MARK: - UI
+    lazy var tableView: UITableView = {
+        let tableView = UITableView()
+        tableView.register(TextViewTableViewCell.self, forCellReuseIdentifier: "text view cell")
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = .systemGroupedBackground
+        view.addSubview(tableView)
+        return tableView
+    }()
 
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemGroupedBackground
-        addSubviews()
-        setupUI()
+        configureNavigationBar()
         makeConstraints()
     }
 
-    func addSubviews() {
-        view.addSubview(textView)
-    }
-
-    func setupUI() {
-        textView.font = UIFont.systemFont(ofSize: 16)
-        textView.textColor = .black
-        textView.backgroundColor = .systemBackground
-        textView.layer.cornerRadius = 8
-        textView.text = "Enter text here..."
-        textView.isScrollEnabled = true
-
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+    func configureNavigationBar() {
+        navigationItem.title = "Todo"
+        navigationController?.navigationBar.prefersLargeTitles = false
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(cancelButtonTapped))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .plain, target: self, action: #selector(saveButtonTapped))
+        view.backgroundColor = .systemGroupedBackground
     }
 
     func makeConstraints() {
-        textView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(16)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(16)
-            make.height.equalTo(100)
+        tableView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
+    }
+
+    @objc func cancelButtonTapped() {
+        dismiss(animated: true)
+    }
+
+    @objc func saveButtonTapped() {
+        // TODO: Save task
+    }
+}
+
+
+extension TodoDetailViewController: UITableViewDataSource {
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 1
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "text view cell", for: indexPath) as! TextViewTableViewCell
+        cell.selectionStyle = .none
+        return cell
+    }
+}
+
+extension TodoDetailViewController: UITableViewDelegate {
+
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 150
     }
 }
