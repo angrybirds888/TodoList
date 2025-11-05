@@ -10,6 +10,8 @@ import UIKit
 class TodoDetailsViewController: UIViewController {
 
     // MARK: - Properties
+    var todoItem: TodoItem?
+
     let placeholderText = "Something needs to be done..."
 
     // MARK: - UI
@@ -31,8 +33,14 @@ class TodoDetailsViewController: UIViewController {
         textView.textContainerInset = .init(top: 16, left: 16, bottom: 16, right: 16)
         textView.textContainer.lineFragmentPadding = 0
         textView.layer.cornerRadius = 16
-        textView.text = placeholderText
-        textView.textColor = .lightGray
+
+        if let item = todoItem {
+            textView.text = item.name
+            textView.textColor = .black
+        } else {
+            textView.text = placeholderText
+            textView.textColor = .lightGray
+        }
         textView.delegate = self
         return textView
     }()
@@ -138,6 +146,7 @@ class TodoDetailsViewController: UIViewController {
 
     @objc func saveButtonTapped() {
         // TODO: Save task
+        dismiss(animated: true)
     }
 }
 

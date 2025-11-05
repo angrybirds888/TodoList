@@ -63,7 +63,12 @@ class TodoListViewController: UIViewController {
     }
 
     @objc func addTapped() {
+        presentDetailScreen()
+    }
+
+    func presentDetailScreen(_ item: TodoItem? = nil) {
         let vc = TodoDetailsViewController()
+        vc.todoItem = item
         let nc = UINavigationController(rootViewController: vc)
         present(nc, animated: true)
     }
@@ -100,5 +105,9 @@ extension TodoListViewController: UITableViewDelegate {
         let view = tableView.dequeueReusableHeaderFooterView(withIdentifier: "my header") as! TodoListHeaderView
         view.updateTaskCount(todoItems.count)
         return view
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        presentDetailScreen(todoItems[indexPath.item])
     }
 }
