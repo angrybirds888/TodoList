@@ -63,7 +63,7 @@ class TodoListViewController: UIViewController {
     }
 
     @objc func addTapped() {
-        let vc = TodoDetailViewController()
+        let vc = TodoDetailsViewController()
         let nc = UINavigationController(rootViewController: vc)
         present(nc, animated: true)
     }
