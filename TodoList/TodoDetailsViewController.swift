@@ -12,6 +12,8 @@ class TodoDetailsViewController: UIViewController {
     // MARK: - Properties
     var todoItem: TodoItem?
 
+    var onFinish: ((TodoItem) -> Void)?
+
     let placeholderText = "Something needs to be done..."
 
     // MARK: - UI
@@ -145,7 +147,18 @@ class TodoDetailsViewController: UIViewController {
     }
 
     @objc func saveButtonTapped() {
-        // TODO: Save task
+
+        let text = textView.text
+
+        guard let text else {
+            print("Text is nil")
+            return
+        }
+
+        let todoItem = TodoItem(name: text)
+
+        onFinish?(todoItem)
+
         dismiss(animated: true)
     }
 }
