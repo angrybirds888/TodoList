@@ -7,8 +7,12 @@
 
 import UIKit
 import SnapKit
+import CoreData
 
 class TodoListViewController: UIViewController {
+
+    let context: NSManagedObjectContext
+    var todos: [TodoItemEntity] = []
 
     var todoItems: [TodoItem] = [
         .init(name: "Call mom"),
@@ -50,6 +54,16 @@ class TodoListViewController: UIViewController {
         toolbarItems = [UIBarButtonItem(systemItem: .flexibleSpace), addButton, UIBarButtonItem(systemItem: .flexibleSpace)]
 
         makeConstraints()
+        loadTodos()
+    }
+
+    init(context: NSManagedObjectContext) {
+        self.context = context
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 
     func makeConstraints() {
@@ -66,6 +80,119 @@ class TodoListViewController: UIViewController {
         presentDetailScreen()
     }
 
+    func loadTodos() {
+        let request: NSFetchRequest<TodoItemEntity> = TodoItemEntity.fetchRequest()
+        context.perform {
+            do {
+                let fetched = try self.context.fetch(request)
+                DispatchQueue.main.async {
+                    if fetched.isEmpty {
+                        self.setInitialTodosIfNeeded()
+                    } else {
+                        self.todos = fetched
+                        self.tableView.reloadData()
+                    }
+                }
+            } catch {
+                print("Fetch error: \(error)")
+            }
+        }
+    }
+
+    func setInitialTodosIfNeeded() {
+        context.perform {
+            for sample in self.todoItems {
+                let entity = TodoItemEntity(context: self.context)
+                entity.name = sample.name
+                entity.isCompleted = sample.isCompleted
+            }
+            do {
+                try self.context.save()
+            } catch {
+                print("Seed save error: \(error)")
+            }
+            self.loadTodos()
+        }
+    }
+
+    func addTodo(from item: TodoItem) {
+        context.perform {
+            let entity = TodoItemEntity(context: self.context)
+            entity.name = item.name
+            entity.isCompleted = item.isCompleted
+
+            do {
+                try self.context.save()
+                
+                let req: NSFetchRequest<TodoItemEntity> = TodoItemEntity.fetchRequest()
+                
+                let fetched = try self.context.fetch(req)
+                DispatchQueue.main.async {
+                    self.todos = fetched
+                    self.tableView.reloadData()
+                }
+            } catch {
+                print("Add save error: \(error)")
+            }
+        }
+    }
+
+    func toggleCompletion(at index: Int) {
+        let entity = todos[index]
+        context.perform {
+            entity.isCompleted.toggle()
+            do {
+                try self.context.save()
+                DispatchQueue.main.async {
+                    self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+                    self.tableView.reloadSections(IndexSet(integer: 0), with: .none)
+                }
+            } catch {
+                print("Toggle save error: \(error)")
+            }
+        }
+    }
+
+    func markAsCompletedAndMoveToTop(at index: Int) {
+        context.perform {
+            let entity = self.todos[index]
+            entity.isCompleted = true
+            do {
+                try self.context.save()
+                
+                let req: NSFetchRequest<TodoItemEntity> = TodoItemEntity.fetchRequest()
+                let fetched = try self.context.fetch(req)
+                
+                DispatchQueue.main.async {
+                    self.todos = fetched
+                    self.tableView.reloadData()
+                }
+            } catch {
+                print("Mark completed save error: \(error)")
+            }
+        }
+    }
+
+    func deleteTodo(at index: Int) {
+        let entity = todos[index]
+        context.perform {
+            self.context.delete(entity)
+            do {
+                try self.context.save()
+                DispatchQueue.main.async {
+                    self.todos.remove(at: index)
+                    self.tableView.performBatchUpdates {
+                        self.tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+                    } completion: { _ in
+                        self.tableView.reloadSections(IndexSet(integer: 0), with: .none)
+                    }
+                }
+            } catch {
+                print("Delete save error: \(error)")
+            }
+        }
+    }
+
     func presentDetailScreen(_ item: TodoItem? = nil) {
         let vc = TodoDetailsViewController()
         vc.todoItem = item
@@ -78,71 +205,50 @@ class TodoListViewController: UIViewController {
     }
 }
 
+// MARK: - UITableViewDataSource
 extension TodoListViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return todoItems.count
+        return todos.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "my cell", for: indexPath) as! TodoItemTableViewCell
-
-        var item = todoItems[indexPath.row]
+        let entity = todos[indexPath.row]
 
         cell.selectionStyle = .none
-        cell.configure(item.name, isCompleted: item.isCompleted)
+        cell.configure(entity.name ?? "", isCompleted: entity.isCompleted)
 
         cell.onToggleCompletion = { [weak self, weak cell] in
             guard let self = self, let cell = cell, let currentIndexPath = tableView.indexPath(for: cell) else { return }
-            self.todoItems[currentIndexPath.row].isCompleted.toggle()
-            tableView.reloadRows(at: [currentIndexPath], with: .automatic)
-            self.tableView.reloadSections(IndexSet(integer: 0), with: .none)
+            self.toggleCompletion(at: currentIndexPath.row)
+            tableView.reloadSections(IndexSet(integer: 0), with: .none)
         }
         return cell
     }
 }
 
+// MARK: - UITableViewDelegate
 extension TodoListViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let view = tableView.dequeueReusableHeaderFooterView(withIdentifier: "my header") as! TodoListHeaderView
-        view.updateTaskCount(todoItems.count)
+        view.updateTaskCount(todos.count)
         return view
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if !todoItems[indexPath.item].isCompleted {
-            presentDetailScreen(todoItems[indexPath.item])
+        if !todos[indexPath.item].isCompleted {
+            let entity = todos[indexPath.item]
+            let item = TodoItem(name: entity.name ?? "", isCompleted: entity.isCompleted)
+            presentDetailScreen(item)
         }
     }
 
     func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let markAsCompleted = UIContextualAction(style: .normal, title: nil) { [weak self] _, _, completion in
             guard let self = self else { completion(false); return }
-
-            self.todoItems[indexPath.row].isCompleted = true
-
-            let movedItem = self.todoItems.remove(at: indexPath.row)
-            self.todoItems.insert(movedItem, at: 0)
-
-            let destinationIndexPath = IndexPath(row: 0, section: indexPath.section)
-
-            self.tableView.performBatchUpdates {
-                self.tableView.moveRow(at: indexPath, to: destinationIndexPath)
-            } completion: { _ in
-                if let cell = self.tableView.cellForRow(at: destinationIndexPath) {
-                    cell.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
-                    UIView.animate(withDuration: 0.35,
-                                   delay: 0,
-                                   usingSpringWithDamping: 0.7,
-                                   initialSpringVelocity: 0.8,
-                                   options: .curveEaseOut,
-                                   animations: {
-                        cell.transform = .identity
-                    }, completion: nil)
-                }
-                self.tableView.reloadSections(IndexSet(integer: 0), with: .none)
-            }
+            self.markAsCompletedAndMoveToTop(at: indexPath.row)
             completion(true)
         }
 
@@ -152,19 +258,12 @@ extension TodoListViewController: UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let trash = UIContextualAction(style: .normal, title: nil) { [weak self] _, _, completion in
+        let trash = UIContextualAction(style: .destructive, title: nil) { [weak self] _, _, completion in
             guard let self = self else { completion(false); return }
-
-            self.todoItems.remove(at: indexPath.row)
-            self.tableView.performBatchUpdates {
-                self.tableView.deleteRows(at: [indexPath], with: .automatic)
-            } completion: { _ in
-                self.tableView.reloadSections(IndexSet(integer: 0), with: .none)
-            }
+            self.deleteTodo(at: indexPath.row)
             completion(true)
         }
         trash.image = UIImage(systemName: "trash")?.withRenderingMode(.alwaysTemplate)
-        trash.backgroundColor = .red
         return UISwipeActionsConfiguration(actions: [trash])
     }
 }
